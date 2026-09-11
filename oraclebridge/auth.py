@@ -1,0 +1,96 @@
+"""Autenticazione O5LOGON (verifier 11g, AES-192).
+
+Il server sceglie il verifier 0xb152: la chiave e' sha1(password + salt)
+estesa a 24 byte; la prima meta' della chiave di sessione viaggia cifrata
+con essa (AUTH_SESSKEY della risposta), la seconda meta' la genera il client
+e la rimanda cifrata; la chiave combinata deriva via PBKDF2-HMAC-SHA512.
+"""
+import hashlib
+import secrets
+
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
+VERIFIER_TYPE_11G_2 = 0x1B25
+
+
+def encrypt_cbc(key: bytes, plain: bytes) -> bytes:
+    iv = bytes(16)
+    cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
+    enc = cipher.encryptor()
+    n = 16 - len(plain) % 16
+    if n:
+        plain += bytes([n]) * n
+    return enc.update(plain) + enc.finalize()
+
+
+def decrypt_cbc(key: bytes, data: bytes) -> bytes:
+    iv = bytes(16)
+    cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
+    dec = cipher.decryptor()
+    return dec.update(data)
+
+
+def password_hash_11g(password: bytes, salt: bytes) -> bytes:
+    h = hashlib.sha1(password)
+    h.update(salt)
+    return h.digest() + bytes(4)      # 24 byte -> AES-192
+
+
+def derive_combo_key(part_b: bytes, part_a: bytes, csk_salt: bytes,
+                     iterations: int) -> bytes:
+    temp = part_b[:24] + part_a[:24]
+    material = temp.hex().upper().encode()
+    return hashlib.pbkdf2_hmac("sha512", material, csk_salt, iterations,
+                               dklen=24)
+
+
+def decrypt_password(combo_key: bytes, encoded_hex: str) -> bytes:
+    raw = decrypt_cbc(combo_key, bytes.fromhex(encoded_hex))
+    return raw[16:]                   # rimuove il salt casuale del client
+
+
+class AuthState:
+    """Stato dell'handshake di autenticazione di una sessione."""
+
+    def __init__(self):
+        self.salt = secrets.token_bytes(16)
+        self.csk_salt = secrets.token_bytes(16)
+        self.iterations = 1024
+        self.part_a = secrets.token_bytes(24)
+        self.encrypted_a_hex = None   # valorizzata quando la password e' nota
+        self.expected_password: bytes | None = None
+        self.user = None
+
+    def set_expected_password(self, password: str):
+        self.expected_password = password.encode("utf-8")
+        h = password_hash_11g(self.expected_password, self.salt)
+        self.encrypted_a_hex = encrypt_cbc(h, self.part_a).hex().upper()
+
+    def phase1_params(self) -> list[tuple[str, str, int]]:
+        return [
+            ("AUTH_VFR_DATA", self.salt.hex().upper(), VERIFIER_TYPE_11G_2),
+            ("AUTH_SESSKEY", self.encrypted_a_hex, 1),
+            ("AUTH_PBKDF2_CSK_SALT", self.csk_salt.hex().upper(), 0),
+            ("AUTH_PBKDF2_SDER_COUNT", str(self.iterations), 0),
+        ]
+
+    def open_client_key(self, encoded_client_key_hex: str) -> bytes | None:
+        """Decifra la meta' chiave del client usando l'hash della password."""
+        if self.expected_password is None:
+            return None
+        h = password_hash_11g(self.expected_password, self.salt)
+        return decrypt_cbc(h, bytes.fromhex(encoded_client_key_hex))
+
+    def verify_password(self, combo_key: bytes, encoded_password_hex: str,
+                        expected: str) -> bool:
+        try:
+            plain = decrypt_password(combo_key, encoded_password_hex)
+        except Exception:
+            return False
+        # rimuove il padding numerico del client
+        plain = plain.rstrip(bytes([plain[-1]])) if plain else b""
+        return plain.decode("utf-8", "replace") == expected
+
+    def server_response(self, combo_key: bytes) -> str:
+        proof = secrets.token_bytes(16) + b"SERVER_TO_CLIENT"
+        return encrypt_cbc(combo_key, proof).hex().upper()

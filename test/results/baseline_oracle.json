@@ -1,0 +1,1369 @@
+{
+ "san.001": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "1"
+    ],
+    "rows": [
+     [
+      1
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "san.002": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "'HELLOBRIDGE'"
+    ],
+    "rows": [
+     [
+      "Hello Bridge"
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "san.003": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "1+1",
+     "'X'"
+    ],
+    "rows": [
+     [
+      2,
+      "x"
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "san.004": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "USER"
+    ],
+    "rows": [
+     [
+      "TESTAPP"
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "san.005": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "NULL"
+    ],
+    "rows": [
+     [
+      null
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "san.006": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "CASEWHENTRUNC(SYSDATE)=TRUNC(CURRENT_DATE)THEN'OK'ELSE'KO'END"
+    ],
+    "rows": [
+     [
+      "ok"
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "san.007": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "LENGTH(RAWTOHEX(SYS_GUID()))"
+    ],
+    "rows": [
+     [
+      32
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "san.008": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "1+NULL"
+    ],
+    "rows": [
+     [
+      null
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "san.009": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "CAST(42ASVARCHAR2(10))",
+     "CAST('17'ASNUMBER)+1"
+    ],
+    "rows": [
+     [
+      "42",
+      18
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "san.010": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "COUNT(*)"
+    ],
+    "rows": [
+     [
+      14
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "fun.001": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "NVL(NULL,'X')",
+     "NVL('A','X')"
+    ],
+    "rows": [
+     [
+      "x",
+      "a"
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "fun.002": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "NVL2(NULL,1,2)",
+     "NVL2('A',1,2)"
+    ],
+    "rows": [
+     [
+      2,
+      1
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "fun.003": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "DECODE(2,1,'UNO',2,'DUE','ALTRO')"
+    ],
+    "rows": [
+     [
+      "due"
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "fun.004": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "COALESCE(NULL,NULL,3)"
+    ],
+    "rows": [
+     [
+      3
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "fun.005": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "TO_CHAR(TO_DATE('2026-09-11','YYYY-MM-DD'),'DD/MM/YYYY')"
+    ],
+    "rows": [
+     [
+      "11/09/2026"
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "fun.006": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "TO_CHAR(ADD_MONTHS(DATE'2026-01-31',1),'YYYY-MM-DD')"
+    ],
+    "rows": [
+     [
+      "2026-02-28"
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "fun.007": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "MONTHS_BETWEEN(DATE'2026-03-01',DATE'2026-01-01')"
+    ],
+    "rows": [
+     [
+      2
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "fun.008": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "TO_CHAR(LAST_DAY(DATE'2026-02-10'),'YYYY-MM-DD')"
+    ],
+    "rows": [
+     [
+      "2026-02-28"
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "fun.009": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "TRUNC(15.789,2)",
+     "TRUNC(-15.789,2)"
+    ],
+    "rows": [
+     [
+      15.78,
+      -15.78
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "fun.010": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "ROUND(2.5)",
+     "ROUND(-2.5)",
+     "ROUND(15.789,2)"
+    ],
+    "rows": [
+     [
+      3,
+      -3,
+      15.79
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "fun.011": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "INSTR('ORACLEBRIDGE','BRIDGE')",
+     "SUBSTR('ORACLEBRIDGE',8,6)",
+     "LPAD('X',4,'-')"
+    ],
+    "rows": [
+     [
+      8,
+      "Bridge",
+      "---x"
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "fun.012": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "TRUNC(SYSDATE+1)-TRUNC(SYSDATE)"
+    ],
+    "rows": [
+     [
+      1
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "fun.013": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "EXTRACT(YEARFROMDATE'2026-09-11')",
+     "EXTRACT(MONTHFROMDATE'2026-09-11')"
+    ],
+    "rows": [
+     [
+      2026,
+      9
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "fun.014": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "LISTAGG(DNAME,',')WITHINGROUP(ORDERBYDNAME)"
+    ],
+    "rows": [
+     [
+      "ACCOUNTING, OPERATIONS, RESEARCH, SALES"
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "fun.015": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "F_SAL_LEVEL(3200)",
+     "F_SAL_LEVEL(2000)",
+     "F_SAL_LEVEL(500)"
+    ],
+    "rows": [
+     [
+      "HIGH",
+      "MID",
+      "LOW"
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "fun.016": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "MOD(10,3)",
+     "ABS(-4)",
+     "CEIL(1.2)",
+     "FLOOR(1.8)"
+    ],
+    "rows": [
+     [
+      1,
+      4,
+      2,
+      1
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "fun.017": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "GREATEST(3,7,5)",
+     "LEAST(3,7,5)"
+    ],
+    "rows": [
+     [
+      7,
+      3
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "fun.018": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "NVL(SUM(COMM),0)"
+    ],
+    "rows": [
+     [
+      0
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "typ.001": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "N_SMALL",
+     "N_FULL",
+     "N_DEC"
+    ],
+    "rows": [
+     [
+      127,
+      1234567890123,
+      123.45
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "typ.002": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "V_VAR",
+     "LENGTH(C_FIXED)",
+     "TRIM(C_FIXED)"
+    ],
+    "rows": [
+     [
+      "ciao",
+      5,
+      "AB"
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "typ.003": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "D_DATE",
+     "TS"
+    ],
+    "rows": [
+     [
+      "2026-09-11T00:00:00.000000",
+      "2026-09-11T10:20:30.123456"
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "typ.004": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "RAWTOHEX(RAW16)"
+    ],
+    "rows": [
+     [
+      "DEADBEEF01020304"
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "typ.005": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "DBMS_LOB.SUBSTR(BIG_TEXT,10,1)",
+     "LENGTH(BIG_TEXT)"
+    ],
+    "rows": [
+     [
+      "xyyyyyyyyy",
+      100
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "typ.006": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "RAWTOHEX(DBMS_LOB.SUBSTR(BIG_BIN,3,1))"
+    ],
+    "rows": [
+     [
+      "CAFE00"
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "typ.007": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "I_DAY"
+    ],
+    "rows": [
+     [
+      "1 02:03:04.567"
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "typ.008": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "ENAME",
+     "NOTES"
+    ],
+    "rows": [
+     [
+      "EMPTYTEST",
+      null
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "typ.009": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "ENAME"
+    ],
+    "rows": [
+     [
+      "SMITH"
+     ],
+     [
+      "JONES"
+     ],
+     [
+      "SCOTT"
+     ],
+     [
+      "FORD"
+     ],
+     [
+      "EMPTYTEST"
+     ]
+    ],
+    "rowcount": 5
+   }
+  ]
+ },
+ "seq.001": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "SEQ_EMP.NEXTVAL-SEQ_EMP.NEXTVAL"
+    ],
+    "rows": [
+     [
+      0
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "seq.002": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "ID",
+     "TAG"
+    ],
+    "rows": [
+     [
+      1,
+      "primo"
+     ],
+     [
+      2,
+      "secondo"
+     ]
+    ],
+    "rowcount": 2
+   }
+  ]
+ },
+ "ora.001": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "ENAME"
+    ],
+    "rows": [
+     [
+      "ALLEN"
+     ],
+     [
+      "BLAKE"
+     ],
+     [
+      "CLARK"
+     ]
+    ],
+    "rowcount": 3
+   }
+  ]
+ },
+ "ora.002": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "ENAME"
+    ],
+    "rows": [
+     [
+      "BLAKE"
+     ],
+     [
+      "CLARK"
+     ]
+    ],
+    "rowcount": 2
+   }
+  ]
+ },
+ "ora.003": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "DNAME",
+     "COUNT(E.EMPNO)"
+    ],
+    "rows": [
+     [
+      "ACCOUNTING",
+      3
+     ],
+     [
+      "OPERATIONS",
+      0
+     ],
+     [
+      "RESEARCH",
+      5
+     ],
+     [
+      "SALES",
+      6
+     ]
+    ],
+    "rowcount": 4
+   }
+  ]
+ },
+ "ora.004": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "DEPTNO"
+    ],
+    "rows": [
+     [
+      40
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "ora.005": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "LEVEL",
+     "ENAME"
+    ],
+    "rows": [
+     [
+      1,
+      "KING"
+     ],
+     [
+      2,
+      "BLAKE"
+     ],
+     [
+      2,
+      "CLARK"
+     ],
+     [
+      2,
+      "JONES"
+     ]
+    ],
+    "rowcount": 4
+   }
+  ]
+ },
+ "ora.006": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "ENAME",
+     "SAL"
+    ],
+    "rows": [
+     [
+      "KING",
+      5000.0
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "ora.007": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "DEPTNO",
+     "COUNT(*)"
+    ],
+    "rows": [
+     [
+      10,
+      3
+     ],
+     [
+      20,
+      5
+     ],
+     [
+      30,
+      6
+     ],
+     [
+      null,
+      14
+     ]
+    ],
+    "rowcount": 4
+   }
+  ]
+ },
+ "ora.008": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "COUNT(*)"
+    ],
+    "rows": [
+     [
+      14
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "ora.009": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "ENAME",
+     "RETRIBUZIONE"
+    ],
+    "rows": [
+     [
+      "KING",
+      5000.0
+     ],
+     [
+      "FORD",
+      3000.0
+     ]
+    ],
+    "rowcount": 2
+   }
+  ]
+ },
+ "ora.010": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "JOB"
+    ],
+    "rows": [
+     [
+      "CLERK"
+     ],
+     [
+      "MANAGER"
+     ],
+     [
+      "PRESIDENT"
+     ]
+    ],
+    "rowcount": 3
+   }
+  ]
+ },
+ "dml.001": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "rows": null,
+    "rowcount": 1
+   }
+  ]
+ },
+ "dml.002": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "rows": null,
+    "rowcount": 1
+   }
+  ]
+ },
+ "dml.003": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "rows": null,
+    "rowcount": 0
+   }
+  ]
+ },
+ "dml.004": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "rows": null,
+    "rowcount": 1
+   }
+  ]
+ },
+ "dml.005": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "out": {
+     "newid": [
+      4
+     ]
+    },
+    "rows": null,
+    "rowcount": 1
+   }
+  ]
+ },
+ "dml.006": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "rows": null,
+    "rowcount": 1
+   },
+   {
+    "rows": null,
+    "rowcount": 0
+   },
+   {
+    "columns": [
+     "COUNT(*)"
+    ],
+    "rows": [
+     [
+      0
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "dml.007": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "rows": null,
+    "rowcount": 1
+   },
+   {
+    "rows": null,
+    "rowcount": 0
+   },
+   {
+    "rows": null,
+    "rowcount": 1
+   },
+   {
+    "rows": null,
+    "rowcount": 0
+   },
+   {
+    "columns": [
+     "COUNT(*)"
+    ],
+    "rows": [
+     [
+      1
+     ]
+    ],
+    "rowcount": 1
+   },
+   {
+    "rows": null,
+    "rowcount": 0
+   }
+  ]
+ },
+ "pls.010": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "out": {
+     "out": 10675
+    },
+    "rows": null,
+    "rowcount": 0
+   }
+  ]
+ },
+ "pls.011": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "out": {
+     "out": "caught:ORA-01403: no data found"
+    },
+    "rows": null,
+    "rowcount": 0
+   }
+  ]
+ },
+ "pls.012": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "out": {
+     "out": "BLAKE"
+    },
+    "rows": null,
+    "rowcount": 0
+   }
+  ]
+ },
+ "pls.013": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "out": {
+     "out": 3
+    },
+    "rows": null,
+    "rowcount": 0
+   }
+  ]
+ },
+ "pls.002": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "out": {
+     "out": 5
+    },
+    "rows": null,
+    "rowcount": 0
+   }
+  ]
+ },
+ "pls.003": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "PKG_DEMO.GET_EMP_NAME(7839)"
+    ],
+    "rows": [
+     [
+      "KING"
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "pls.004": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "columns": [
+     "PKG_DEMO.GET_EMP_NAME(1)"
+    ],
+    "rows": [
+     [
+      null
+     ]
+    ],
+    "rowcount": 1
+   }
+  ]
+ },
+ "pls.005": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "out": {
+     "cur": [
+      [
+       7782,
+       "CLARK",
+       2450.0
+      ],
+      [
+       7839,
+       "KING",
+       5000.0
+      ],
+      [
+       7934,
+       "MILLER",
+       1300.0
+      ]
+     ]
+    },
+    "rows": null,
+    "rowcount": 0
+   }
+  ]
+ },
+ "pls.006": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "out": {
+     "out": -20001
+    },
+    "rows": null,
+    "rowcount": 0
+   }
+  ]
+ },
+ "pls.007": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "error": "ORA-20001",
+    "rows": null,
+    "rowcount": null,
+    "out": null,
+    "message": "ORA-20001: boom bizantino"
+   }
+  ]
+ },
+ "pls.008": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "out": {
+     "l1": "ciao bridge",
+     "l2": "seconda riga"
+    },
+    "rows": null,
+    "rowcount": 0
+   }
+  ]
+ },
+ "pls.009": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "rows": null,
+    "rowcount": 14
+   },
+   {
+    "rows": null,
+    "rowcount": 1
+   },
+   {
+    "columns": [
+     "COUNT(*)"
+    ],
+    "rows": [
+     [
+      1
+     ]
+    ],
+    "rowcount": 1
+   },
+   {
+    "rows": null,
+    "rowcount": 1
+   }
+  ]
+ },
+ "err.001": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "error": "ORA-00001",
+    "rows": null,
+    "rowcount": null,
+    "out": null,
+    "message": "ORA-00001: unique constraint (TESTAPP.PK_DEPT) violated on table TESTAPP.DEPT columns (DEPTNO)"
+   }
+  ]
+ },
+ "err.002": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "error": "ORA-01400",
+    "rows": null,
+    "rowcount": null,
+    "out": null,
+    "message": "ORA-01400: cannot insert NULL into (\"TESTAPP\".\"DEPT\".\"DNAME\")"
+   }
+  ]
+ },
+ "err.003": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "error": "ORA-00942",
+    "rows": null,
+    "rowcount": null,
+    "out": null,
+    "message": "ORA-00942: table or view \"TESTAPP\".\"TABELLA_CHE_NON_ESISTE\" does not exist"
+   }
+  ]
+ },
+ "err.004": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "error": "ORA-00904",
+    "rows": null,
+    "rowcount": null,
+    "out": null,
+    "message": "ORA-00904: \"COLONNA_INESISTENTE\": invalid identifier"
+   }
+  ]
+ },
+ "err.005": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "error": "ORA-01722",
+    "rows": null,
+    "rowcount": null,
+    "out": null,
+    "message": "ORA-01722: unable to convert string value containing 'a' to a number: "
+   }
+  ]
+ },
+ "err.006": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "error": "ORA-01476",
+    "rows": null,
+    "rowcount": null,
+    "out": null,
+    "message": "ORA-01476: divisor is equal to zero"
+   }
+  ]
+ },
+ "err.007": {
+  "status": "PASS",
+  "detail": "",
+  "steps": [
+   {
+    "error": "ORA-00900",
+    "rows": null,
+    "rowcount": null,
+    "out": null,
+    "message": "ORA-00900: invalid SQL statement"
+   }
+  ]
+ }
+}

@@ -1,0 +1,44 @@
+name: oraclebridge-test
+
+services:
+  oracle:
+    image: container-registry.oracle.com/database/free:latest
+    container_name: ob-oracle
+    hostname: ob-oracle
+    ports:
+      - "1521:1521"
+    environment:
+      ORACLE_PWD: "SysOracle_26ai"
+      ORACLE_SID: "FREE"
+      ORACLE_PDB: "FREEPDB1"
+    volumes:
+      - ob-oradata:/opt/oracle/oradata
+    healthcheck:
+      test: ["CMD", "/opt/oracle/healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 60
+      start_period: 25m
+    restart: unless-stopped
+
+  postgres:
+    build: ./postgres
+    container_name: ob-postgres
+    hostname: ob-postgres
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: "orabridge"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "PgPostgres_26ai"
+    volumes:
+      - ob-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d orabridge"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  ob-oradata:
+  ob-pgdata:

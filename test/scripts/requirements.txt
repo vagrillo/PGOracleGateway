@@ -1,0 +1,4 @@
+# dipendenze ambiente test OracleBridge (python 3.12+)
+python-oracledb>=2.4   # installato da sorgente GitHub v26.0.0 (PyPI filtrato in questo ambiente)
+psycopg[binary]>=3.2
+sqlglot>=25

@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# ora2pg: clone esterno (git clone https://github.com/darold/ora2pg vendor/ora2pg)
+vendor/
+
+# log e file temporanei
+*.log
+nohup.out
+
+# dati container (vivono nei volumi docker)
+*.dbf
