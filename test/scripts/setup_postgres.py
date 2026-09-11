@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Setup schema mirror su PostgreSQL (target della traduzione).
+"""Mirror schema setup on PostgreSQL (translation target).
 
-Crea l'equivalente PostgreSQL+orafce dello schema Oracle di test:
-stesse tabelle/logica, tipi PG, funzioni PL/pgSQL per il package pkg_demo.
+Creates the PostgreSQL+orafce equivalent of the Oracle test schema:
+same tables/logic, PG types, PL/pgSQL functions for the pkg_demo package.
 
-Uso: python3 setup_postgres.py
+Usage: python3 setup_postgres.py
 """
 import sys
 from pathlib import Path
@@ -177,7 +177,7 @@ def main():
                     "WHERE table_schema = 'public' ORDER BY 1")
         tables = [r[0] for r in cur.fetchall()]
     conn.close()
-    print(f"PostgreSQL mirror pronto. emp={n} righe, tabelle: {', '.join(tables)}")
+    print(f"PostgreSQL mirror ready. emp={n} rows, tables: {', '.join(tables)}")
 
 
 if __name__ == "__main__":

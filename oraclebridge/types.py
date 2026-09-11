@@ -1,8 +1,8 @@
-"""Conversioni di tipo Oracle <-> Python/PostgreSQL.
+"""Oracle <-> Python/PostgreSQL type conversions.
 
-Encoder lato server (valori verso il client) e decoder lato server (bind
-in ingresso dal client). Algoritmi specchio di impl/base/encoders.pyx e
-decoders.pyx di python-oracledb.
+Server-side encoders (values towards the client) and server-side decoders
+(binds incoming from the client). Mirror algorithms of
+python-oracledb impl/base/encoders.pyx and decoders.pyx.
 """
 import datetime
 from decimal import Decimal, InvalidOperation
@@ -27,14 +27,14 @@ ORA_TYPE_CLOB = 112
 
 
 # ---------------------------------------------------------------------------
-# NUMBER: formato canonico Oracle (esponente + coppie base-100)
+# NUMBER: canonical Oracle format (exponent + base-100 pairs)
 # ---------------------------------------------------------------------------
 def encode_number(value) -> bytes:
-    """Codifica un valore numerico nel formato binario Oracle NUMBER.
+    """Encode a numeric value into the Oracle NUMBER binary format.
 
-    Replica passo-passo l'algoritmo del client (impl/base/encoders.pyx,
-    encode_number), che parte dalla rappresentazione testuale del numero.
-    Verificato con DUMP() su Oracle 26ai: 1=c1 02, 10=c1 0b, 100=c2 02,
+    Step-by-step replica of the client algorithm (impl/base/encoders.pyx,
+    encode_number), starting from the textual representation of the number.
+    Verified with DUMP() on Oracle 26ai: 1=c1 02, 10=c1 0b, 100=c2 02,
     123.45=c2 02 18 2e, -1=3e 64 66, 0.001=bf 0b.
     """
     if isinstance(value, bytes):
@@ -54,12 +54,12 @@ def encode_number(value) -> bytes:
         raise ValueError(f"numero vuoto: {value!r}")
 
     digits: list[int] = []
-    # parte intera: gli zero iniziali non contano
+    # integer part: leading zeros do not count
     pos = 0
     while pos < len(text) and text[pos] not in ".eE":
         ch = text[pos]
         if not ch.isdigit():
-            raise ValueError(f"numero invalido: {value!r}")
+            raise ValueError(f"invalid number: {value!r}")
         d = int(ch)
         pos += 1
         if d == 0 and not digits:
@@ -67,14 +67,14 @@ def encode_number(value) -> bytes:
         digits.append(d)
     dpi = len(digits)
 
-    # parte frazionaria: gli zero iniziali prima della prima cifra
-    # significativa scalano l'indice decimale verso il basso
+    # fractional part: leading zeros before the first significant
+    # digit shift the decimal index down
     if pos < len(text) and text[pos] == ".":
         pos += 1
         while pos < len(text) and text[pos] not in "eE":
             ch = text[pos]
             if not ch.isdigit():
-                raise ValueError(f"numero invalido: {value!r}")
+                raise ValueError(f"invalid number: {value!r}")
             d = int(ch)
             pos += 1
             if d == 0 and not digits:
@@ -82,7 +82,7 @@ def encode_number(value) -> bytes:
                 continue
             digits.append(d)
 
-    # esponente
+    # exponent
     if pos < len(text) and text[pos] in "eE":
         pos += 1
         exp_neg = False
@@ -90,20 +90,20 @@ def encode_number(value) -> bytes:
             exp_neg = text[pos] == "-"
             pos += 1
         if pos >= len(text):
-            raise ValueError(f"esponente vuoto: {value!r}")
+            raise ValueError(f"empty exponent: {value!r}")
         exp_value = int(text[pos:])
         dpi += -exp_value if exp_neg else exp_value
 
-    # zero finali non significativi
+    # non-significant trailing zeros
     while digits and digits[-1] == 0:
         digits.pop()
     if not digits:
         return b"\x80"
 
     if len(digits) > 40 or dpi > 126 or dpi < -129:
-        raise ValueError(f"numero fuori range Oracle: {value!r}")
+        raise ValueError(f"number out of Oracle range: {value!r}")
 
-    # dpi dispari: primo coppia con una sola cifra (prefisso zero implicito)
+    # odd dpi: first pair has a single digit (implicit zero prefix)
     prepend_zero = False
     if dpi % 2 == 1:
         prepend_zero = True
@@ -114,7 +114,7 @@ def encode_number(value) -> bytes:
         digits.append(0)
 
     num_pairs = len(digits) // 2
-    # divisione intera con troncamento verso zero (semantica C)
+    # integer division truncating toward zero (C semantics)
     exponent_on_wire = int(dpi / 2) + 192
     if is_negative:
         exponent_on_wire = ~exponent_on_wire & 0xFF
@@ -134,12 +134,12 @@ def encode_number(value) -> bytes:
 
 
 def decode_number(data: bytes) -> Decimal:
-    """Decodifica il formato binario Oracle NUMBER in Decimal.
+    """Decode the Oracle NUMBER binary format into Decimal.
 
-    Invariante dell'algoritmo del client: per il segno positivo,
-    valore = int(cifre) * 10^(2*(e_wire-192) - 2*n_coppie), con esponente
-    e_wire = byte0 e cifre = coppie base-100 (byte-1). Per il negativo:
-    complemento a uno dell'esponente e delle cifre (101-byte), terminatore 102.
+    Client algorithm invariant: for the positive sign,
+    value = int(digits) * 10^(2*(e_wire-192) - 2*n_pairs), with exponent
+    e_wire = byte0 and digits = base-100 pairs (byte-1). For the negative:
+    one's complement of exponent and digits (101-byte), terminator 102.
     """
     if not data:
         return Decimal(0)
@@ -159,7 +159,7 @@ def decode_number(data: bytes) -> Decimal:
     if not pairs:
         return Decimal(0)
     if any(p < 0 or p > 99 for p in pairs):
-        raise ValueError(f"NUMBER malformato: {data.hex()}")
+        raise ValueError(f"malformed NUMBER: {data.hex()}")
     digit_str = "".join(f"{p:02d}" for p in pairs)
     exponent = 2 * (e_wire - 192 - len(pairs))
     value = Decimal(digit_str).scaleb(exponent)
@@ -228,12 +228,12 @@ def decode_interval_ds(data: bytes):
 
 
 # ---------------------------------------------------------------------------
-# Conversioni PG -> valori wire Oracle, in base al tipo dichiarato
+# PG -> Oracle wire value conversions, based on the declared type
 # ---------------------------------------------------------------------------
 def encode_column_value(ora_type: int, value) -> bytes | None:
-    """Valore PG/Python -> bytes wire Oracle (senza prefisso lunghezza).
+    """PG/Python value -> Oracle wire bytes (no length prefix).
 
-    Ritorna None per NULL.
+    Returns None for NULL.
     """
     if value is None:
         return None
@@ -272,7 +272,7 @@ def encode_column_value(ora_type: int, value) -> bytes | None:
             days, hours, minutes, seconds, fseconds = \
                 -days, -hours, -minutes, -seconds, -fseconds
         return encode_interval_ds(days, hours, minutes, seconds, fseconds)
-    raise ValueError(f"tipo Oracle non gestito in encode: {ora_type}")
+    raise ValueError(f"Oracle type not handled in encode: {ora_type}")
 
 
 ora_buffer_sizes = {

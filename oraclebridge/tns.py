@@ -1,13 +1,13 @@
-"""Livello TNS: framing dei pacchetti su TCP.
+"""TNS layer: TCP packet framing.
 
-Formati dedotti da python-oracledb thin (impl/thin/packet.pyx, transport.pyx,
-messages/connect.pyx).
+Formats deduced from python-oracledb thin (impl/thin/packet.pyx,
+transport.pyx, messages/connect.pyx).
 
-Header (8 byte):
+Header (8 bytes):
   protocol < 315 : [len u16][cksum u16][type u8][flags u8][reserved u16]
   protocol >=315 : [len u32]          [type u8][flags u8][reserved u16]
-Pacchetti DATA aggiungono 2 byte di data_flags dopo l'header.
-Prima dell'ACCEPT si usa sempre il layout 16 bit.
+DATA packets add 2 bytes of data_flags after the header.
+Before the ACCEPT the 16-bit layout is always used.
 """
 import struct
 
@@ -50,10 +50,10 @@ class TnsPacket:
 
 
 async def read_packet(rdr, use_32bit: bool = False) -> TnsPacket | None:
-    """Legge un pacchetto TNS da un reader async con await rdr.read_exact(n).
+    """Read a TNS packet from an async reader via await rdr.read_exact(n).
 
-    use_32bit=False: layout 16 bit (usato dal client prima dell'ACCEPT);
-    True: layout con lunghezza a 32 bit (protocol >= 315, post-ACCEPT).
+    use_32bit=False: 16-bit layout (used by the client before the ACCEPT);
+    True: 32-bit length layout (protocol >= 315, post-ACCEPT).
     """
     header = await rdr.read_exact(HEADER_SIZE)
     if header is None:
@@ -94,9 +94,9 @@ def build_data_packet(ttc_payload: bytes, data_flags: int = 0,
 
 
 def build_accept_packet() -> bytes:
-    """ACCEPT allineato al formato reale osservato su Oracle 26ai:
-    version 319, options=1, flags2=0 (niente FAST_AUTH / END_OF_RESPONSE /
-    OOB check, cosi' il client usa i percorsi semplici)."""
+    """ACCEPT aligned with the real format observed on Oracle 26ai:
+    version 319, options=1, flags2=0 (no FAST_AUTH / END_OF_RESPONSE /
+    OOB check, so the client takes the simple paths)."""
     out = bytearray()
     out += struct.pack(">H", 319)                # version
     out += struct.pack(">H", 1)                  # options (GSO_DONT_CARE)
@@ -121,7 +121,7 @@ def build_marker_packet(marker_type: int) -> bytes:
 
 
 def parse_connect_payload(payload: bytes) -> dict:
-    """Parla il payload del pacchetto CONNECT del client."""
+    """Parse the payload of the client CONNECT packet."""
     info = {}
     if len(payload) < 74:
         info["connect_string"] = ""

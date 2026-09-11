@@ -1,18 +1,19 @@
-"""Macchina a stati TTC del proxy OracleBridge.
+"""TTC state machine of the OracleBridge proxy.
 
-Decodifica le richieste del client python-oracledb thin e costruisce le
-risposte nel formato atteso (message stream chiuso da messaggio ERROR(4)
-con codice 0/ORA-xxxxx o STATUS(9)); i risultati delle query viaggiano come
-DESCRIBE_INFO(16) + ROW_HEADER(6) + ROW_DATA(7); i bind OUT PL/SQL come
+Decodes the requests of the python-oracledb thin client and builds the
+responses in the expected format (message stream closed by an ERROR(4)
+message with number 0/ORA-xxxxx or STATUS(9)); query results travel as
+DESCRIBE_INFO(16) + ROW_HEADER(6) + ROW_DATA(7); PL/SQL OUT binds as
 IO_VECTOR(11) + ROW_DATA.
 
-Note di protocollo verificate sui sorgenti python-oracledb thin:
-- il rowcount DML viaggia nel campo esteso del messaggio ERROR(4) con
-  numero errore 0 (stesso messaggio che porta il cursor id assegnato);
-- la fine delle righe e' segnalata con ERROR 1403 (ORA-01403), che il
-  client assorbe quando si trova in fase di fetch;
-- al primo execute di una query il client chiede DEFINE (describe) e poi
-  rifà la richiesta completa: la risposta describe termina con ERROR(0).
+Protocol notes verified against the python-oracledb thin sources:
+- the DML rowcount travels in the extended field of the ERROR(4) message
+  with error number 0 (the same message carrying the assigned cursor id);
+- end of rows is signaled with ERROR 1403 (ORA-01403), which the client
+  absorbs while in fetch phase;
+- on the first execute of a query the client asks for DEFINE (describe)
+  and then resends the full request: the describe response ends with
+  ERROR(0).
 """
 import re
 
@@ -67,7 +68,7 @@ class BindParam:
 
 
 class Session:
-    """Stato TTC di una connessione client."""
+    """TTC state of a client connection."""
 
     def __init__(self, pg_host: str, pg_port: int, pg_db: str, log=None):
         self.pg_host = pg_host
@@ -103,7 +104,7 @@ class Session:
         function_code = rdr.u8()
         rdr.u8()                              # sequence number
         if message_type != 3:                 # TNS_MSG_TYPE_FUNCTION
-            self._dbg(f"messaggio inatteso type={message_type} "
+            self._dbg(f"unexpected message type={message_type} "
                       f"fn={function_code}")
             return self._status_message()
         try:
@@ -119,8 +120,8 @@ class Session:
                 3113, "ORA-03113: end-of-file on communication channel", 0, 0)
 
     def _protocol_response(self) -> bytes:
-        """Risposta al PROTOCOL del client: caps del server che degradano il
-        client al field version 6 (11.2): formati piu' semplici per tutti."""
+        """Response to the client PROTOCOL: server caps degrading the
+        client to field version 6 (11.2): simpler formats for everyone."""
         w = TTCWriter()
         w.u8(1)                               # TNS_MSG_TYPE_PROTOCOL
         w.u8(6)                               # server protocol version
@@ -143,7 +144,7 @@ class Session:
 
     @staticmethod
     def _data_types_response() -> bytes:
-        """Risposta DATA_TYPES: nessuna conversione (lista vuota)."""
+        """DATA_TYPES response: no conversions (empty list)."""
         w = TTCWriter()
         w.u8(2)
         w.u16be(0)                            # terminatore
@@ -173,9 +174,9 @@ class Session:
                 self.pg.rollback()
                 self.pg.close()
             return self._status_message()
-        self._dbg(f"funzione TTC non supportata: {fn}")
-        raise OrabridgeError(900, f"ORA-00900: funzione TTC {fn} non "
-                                  "supportata dal proxy")
+        self._dbg(f"unsupported TTC function: {fn}")
+        raise OrabridgeError(900, f"ORA-00900: TTC function {fn} not "
+                                  "supported by the proxy")
 
     # ==================================================================
     # Autenticazione
@@ -209,10 +210,10 @@ class Session:
         if user:
             self.user = user
         self._read_kv_pairs(rdr, num_pairs)
-        self._dbg("auth fase 1, utente:", self.user)
-        # l'O5LOGON 11g richiede che il server conosca la password gia' in
-        # fase 1 (cifra la sua meta' di chiave con il suo hash): gli utenti
-        # non configurati vengono rifiutati subito
+        self._dbg("auth phase 1, user:", self.user)
+        # 11g O5LOGON requires the server to know the password already in
+        # phase 1 (it encrypts its key half with its hash): unconfigured
+        # users are rejected right away
         if self.known_password is not None and self.user:
             self.auth.user = self.user
             self.auth.set_expected_password(self.known_password)
@@ -231,7 +232,7 @@ class Session:
         pairs = self._read_kv_pairs(rdr, num_pairs)
         sesskey = (pairs.get("AUTH_SESSKEY") or ("", 0))[0]
         password_hex = (pairs.get("AUTH_PASSWORD") or ("", 0))[0]
-        self._dbg("auth fase 2, utente:", self.user)
+        self._dbg("auth phase 2, user:", self.user)
         try:
             part_b = self.auth.open_client_key(sesskey)
             if part_b is None:
@@ -260,7 +261,7 @@ class Session:
         except OrabridgeError:
             raise
         except Exception as e:  # noqa: BLE001
-            self._dbg("autenticazione fallita:", e)
+            self._dbg("authentication failed:", e)
             raise OrabridgeError(1017, ora_message(1017))
         params = [
             ("AUTH_VERSION_NO", str(SERVER_VERSION_NUM), 0),
@@ -321,7 +322,7 @@ class Session:
     def _parse_bind_values(rdr: TTCReader, params: list[BindParam]):
         for p in params:
             if p.ora_type == ORA_TYPE_CURSOR:
-                rdr.u8()                   # marker cursore (valore 1,0)
+                rdr.u8()                   # cursor marker (value 1,0)
                 continue
             raw = rdr.length_prefixed_bytes()
             p.value = Session._decode_bind_value(p.ora_type, raw)
@@ -348,7 +349,7 @@ class Session:
             rdr.ub4()                      # num iters
             rdr.ub4()
             rdr.ub4()
-            raise OrabridgeError(900, "ORA-00900: reexecute non supportato")
+            raise OrabridgeError(900, "ORA-00900: reexecute not supported")
         options = rdr.ub4()
         cursor_id = rdr.ub4()
         has_sql = rdr.u8()
@@ -373,15 +374,15 @@ class Session:
         rdr.u8()                           # dnam
         rdr.ub4()                          # dnaml
         rdr.ub4()                          # registration msb
-        # blocco arraydmlrowcounts: presente sia col flag sia senza
+        # arraydmlrowcounts block: present both with and without the flag
         # (u8 pointer, ub4 size, u8 pointer)
         rdr.u8()
         rdr.ub4()
         rdr.u8()
         sql_text = None
         if has_sql:
-            # sql subito dopo (write_bytes_with_length = ub1-len prefix),
-            # poi al8i4[0] (flag parse)
+            # sql right after (write_bytes_with_length = ub1-len prefix),
+            # then al8i4[0] (parse flag)
             sql_text = rdr.length_prefixed_bytes()
             if sql_text is not None:
                 sql_text = sql_text.decode("utf-8")
@@ -403,7 +404,7 @@ class Session:
         if binds_ptr and num_binds:
             names = find_bind_names(sql_text or "")
             bind_params = Session._parse_bind_metadata(rdr, num_binds, names)
-            # i bind RETURNING non portano valori nella richiesta
+            # RETURNING binds carry no values in the request
             if not is_query and not is_returning:
                 for _ in range(min(1, max(1, exec_count))):
                     if rdr.u8() == MSG_ROW_DATA:
@@ -416,7 +417,7 @@ class Session:
             if cursor_id:
                 # execute senza sql su un cursore noto: serve le righe bufferate
                 return self._serve_cursor_rows(cursor_id, num_iters)
-            raise OrabridgeError(900, "ORA-00900: statement senza testo")
+            raise OrabridgeError(900, "ORA-00900: statement without text")
 
         upper = sql_text.strip().upper()
         if upper.startswith(("BEGIN", "DECLARE", "CALL")):
@@ -447,10 +448,10 @@ class Session:
                     pass
             args[p.name] = v
             # sqlglot puo' preservare il caso originale dei placeholder:
-            # si copre anche la variante minuscola
+            # also covers the lowercase variant
             args[p.name.lower()] = v
             if p.ora_type == ORA_TYPE_CURSOR:
-                args.pop(p.name, None)    # il cursore non e' un argomento PG
+                args.pop(p.name, None)    # the cursor is not a PG argument
                 args.pop(p.name.lower(), None)
         return args
 
@@ -458,7 +459,7 @@ class Session:
                      num_iters: int, options: int) -> bytes:
         args = self._bind_args(bind_params) if num_binds else None
         if not (options & (EXEC_EXECUTE | EXEC_FETCH)):
-            # passata DEFINE (describe-only): il client rifara' la richiesta
+            # DEFINE pass (describe-only): the client will resend the request
             self._dbg("define-only pass")
             return self._error_message(0, "", 0, 0)
         pg_sql = translate_sql(sql_text)
@@ -469,8 +470,8 @@ class Session:
         if not meta:
             return self._error_message(0, "", 0, 0,
                                        rowcount=self.pg.last_rowcount)
-        # il client alloca il buffer righe in base a num_iters: mai superarlo.
-        # Se restano righe, si assegna un cursore server-side per il FETCH.
+        # the client allocates the row buffer based on num_iters: never exceed
+        # it. If rows remain, a server-side cursor is assigned for the FETCH.
         deliver = rows if num_iters <= 0 else rows[:num_iters]
         rest = rows[len(deliver):]
         if not rest:
@@ -478,8 +479,8 @@ class Session:
         cursor_id = self.next_ref_id
         self.next_ref_id += 1
         self.ref_cursors[cursor_id] = {"meta": meta, "rows": rest, "pos": 0}
-        self._dbg(f"query parziale: consegnate {len(deliver)}, "
-                  f"cursore {cursor_id} con {len(rest)} righe")
+        self._dbg(f"partial query: delivered {len(deliver)}, "
+                  f"cursor {cursor_id} with {len(rest)} rows")
         return self._query_response(meta, deliver, cursor_id)
 
     def _eocs(self) -> int:
@@ -497,11 +498,11 @@ class Session:
                            num_binds: int) -> bytes:
         """INSERT/UPDATE ... RETURNING x INTO :bind.
 
-        Traduzione: si rimuove 'INTO :bind' (il RETURNING resta, PostgreSQL
-        lo supporta nativamente) e le righe ritornate vengono spedite come
-        ROW_DATA con, per ogni bind, ub4 n righe + valori + sb4, poi
-        PARAMETER con i valori scratch e ERROR(0) con il rowcount.
-        Struttura specchiata dalla risposta reale di Oracle 26ai.
+        Translation: 'INTO :bind' is removed (RETURNING stays, PostgreSQL
+        supports it natively) and the returned rows are sent as ROW_DATA
+        with, per bind, ub4 row count + values + sb4, then PARAMETER with
+        the scratch values and ERROR(0) with the rowcount.
+        Structure mirrored from the real Oracle 26ai response.
         """
         args = self._bind_args(bind_params) if num_binds else None
         pg_sql = translate_sql(sql_text)
@@ -519,7 +520,7 @@ class Session:
                 Session._write_column_value(w, p.ora_type,
                                             row[0] if row else None)
                 w.sb4(0)                   # actual_num_bytes
-        # PARAMETER con scratch buffer (al8o4l=6 + 6 ub4, il client li salta)
+        # PARAMETER with scratch buffer (al8o4l=6 + 6 ub4, skipped by the client)
         w.u8(8)
         w.ub2(6)
         for _ in range(6):
@@ -537,7 +538,7 @@ class Session:
         if not block.supported:
             raise OrabridgeError(
                 6550, ora_message(6550, ("1", "1",
-                                         block.error or "non supportato")))
+                                         block.error or "not supported")))
         for stmt in block.statements:
             m = re.match(
                 r"(?i)raise_application_error\s*\(\s*-(\d+)\s*,\s*'(.+?)'\s*\)",
@@ -548,15 +549,15 @@ class Session:
                 raise OrabridgeError(num, f"ORA-{num}: {msg}")
         args = self._bind_args(bind_params) if num_binds else {}
 
-        # bind di tipo CURSOR: l'istruzione che lo tocca apre un REF CURSOR
+        # CURSOR-type bind: the statement touching it opens a REF CURSOR
         cursor_binds = [p for p in bind_params if p.ora_type == ORA_TYPE_CURSOR]
         ref_meta, ref_rows, ref_id = None, None, 0
         cursor_call_idx: set[int] = set()
         for idx, stmt in enumerate(block.statements):
             if cursor_binds and any(f":{p.name}".lower() in stmt.lower()
                                     for p in cursor_binds):
-                # apre il cursore: rimuove l'argomento cursore dalla chiamata
-                # (il lato PG della funzione non lo prevede) e materializza
+                # opens the cursor: removes the cursor argument from the call
+                # (the PG side of the function does not have it) and materializes
                 call = re.sub(r"(?i),\s*:[\w$#]+\s*\)", ")", stmt)
                 if call.strip().endswith(")"):
                     pg_call = translate_sql("SELECT * FROM " + call)
@@ -589,7 +590,7 @@ class Session:
         except OrabridgeError as e:
             if not block.exception_other:
                 raise
-            # simulazione WHEN OTHERS: SQLCODE/SQLERRM dal blocco catturato
+            # WHEN OTHERS simulation: SQLCODE/SQLERRM from the caught error
             handler = block.translate_handler(e.num, e.message)
             if handler["select"]:
                 _meta, rows = self.pg.run(handler["select"], args)
@@ -613,7 +614,7 @@ class Session:
         for p in bind_params:
             w.u8(MSG_ROW_DATA)
             if p.ora_type == ORA_TYPE_CURSOR and ref_id:
-                # cursore: ub1 marker + describe figlia + ub2 cursor id
+                # cursor: ub1 marker + child describe + ub2 cursor id
                 w.u8(1)
                 Session._write_describe_info(w, ref_meta)
                 w.ub2(ref_id)
@@ -627,8 +628,8 @@ class Session:
 
     # ------------------------------------------------------------------
     def _serve_cursor_rows(self, cursor_id: int, num_iters: int) -> bytes:
-        """Serve le righe bufferate di un cursore (REF CURSOR o query
-        parziale) per un execute/fetch senza testo SQL."""
+        """Serve the buffered rows of a cursor (REF CURSOR or partial
+        query) for an execute/fetch without SQL text."""
         entry = self.ref_cursors.get(cursor_id)
         if entry is None:
             raise OrabridgeError(1007,
@@ -731,7 +732,7 @@ class Session:
 
     @staticmethod
     def _write_describe_info(w: TTCWriter, meta):
-        """Blocco DESCRIBE_INFO (senza il byte di skip iniziale)."""
+        """DESCRIBE_INFO block (without the leading skip byte)."""
         w.ub4(sum(m["buffer_size"] for m in meta))
         w.ub4(len(meta))
         if meta:
@@ -753,10 +754,10 @@ class Session:
             Session._write_rows(w, meta, rows)
         w.u8(MSG_ERROR)
         if cursor_id:
-            # restano righe: ERROR(0) con il cursor id per il FETCH successivo
+            # rows remain: ERROR(0) with the cursor id for the next FETCH
             Session._write_error_body(w, 0, "", 0, cursor_id)
         else:
-            # fine righe: ERROR 1403 viene assorbito dal client come eof fetch
+            # end of rows: ERROR 1403 is absorbed by the client as fetch eof
             Session._write_error_body(w, 1403, ora_message(1403), 0, 0)
         return w.getvalue()
 
@@ -795,8 +796,8 @@ class Session:
 
     @staticmethod
     def _write_rows(w: TTCWriter, meta, rows):
-        # una riga = un messaggio ROW_DATA (il client processa una riga
-        # per messaggio e incrementa row_index a ogni messaggio)
+        # one row = one ROW_DATA message (the client processes one row
+        # per message and increments row_index on each message)
         for row in rows:
             w.u8(MSG_ROW_DATA)
             for m, value in zip(meta, row):
@@ -815,7 +816,7 @@ class Session:
         rdr.u8()                           # type piggyback
         code = rdr.u8()
         rdr.u8()                           # seq
-        self._dbg("piggyback client:", code)
+        self._dbg("client piggyback:", code)
         if code == 105:                    # CLOSE_CURSORS
             count = rdr.ub4()
             for _ in range(count):
@@ -833,4 +834,4 @@ class Session:
             rdr.ub8()
         else:
             raise OrabridgeError(
-                900, f"ORA-00900: piggyback {code} non gestito dal proxy")
+                900, f"ORA-00900: piggyback {code} not handled by the proxy")

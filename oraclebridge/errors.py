@@ -1,4 +1,4 @@
-"""Codici e messaggi di errore ORA + mapping SQLSTATE PostgreSQL -> ORA."""
+"""ORA error codes/messages + PostgreSQL SQLSTATE mapping."""
 import re
 
 # SQLSTATE PG -> (numero ORA, template messaggio)
@@ -58,7 +58,7 @@ ORA_MESSAGES = {
 
 
 class OrabridgeError(Exception):
-    """Errore tradotto in risposta TTC ORA."""
+    """Error translated into a TTC ORA response."""
 
     def __init__(self, num: int, message: str = "", pos: int = 0):
         self.num = num
@@ -79,14 +79,14 @@ def ora_message(num: int, detail="") -> str:
 
 
 def from_pg_error(pg_error) -> OrabridgeError:
-    """Converte un errore psycopg in OrabridgeError."""
+    """Convert a psycopg error into an OrabridgeError."""
     sqlstate = getattr(pg_error, "sqlstate", None) or "HY000"
     if sqlstate in SQLSTATE_TO_ORA:
         num, template = SQLSTATE_TO_ORA[sqlstate]
         detail = ""
         if "%s" in template:
-            # estrae l'ultimo identificatore quotato dal messaggio PG
-            # es. 'duplicate key value violates unique constraint "pk_dept"'
+            # extract the last quoted identifier from the PG message,
+            # e.g. 'duplicate key value violates unique constraint "pk_dept"'
             quoted = re.findall(r'"([^"]+)"', str(pg_error))
             detail = quoted[-1].upper() if quoted else \
                 str(pg_error).split("\n")[0][:60]

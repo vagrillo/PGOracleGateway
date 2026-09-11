@@ -1,6 +1,6 @@
-"""Primitive di lettura/scrittura TTC.
+"""TTC read/write primitives.
 
-Mirror lato server delle primitive del client python-oracledb
+Server-side mirror of the python-oracledb client primitives
 (src/oracledb/impl/base/buffer.pyx).
 """
 import struct
@@ -12,8 +12,8 @@ class TnsBufError(Exception):
 
 
 def enc_varint(value: int, max_len: int) -> bytes:
-    """Intero TTC variabile (ub1/ub2/ub4/ub8): primo byte = lunghezza,
-    bit alto = segno negativo; zero -> singolo byte 0."""
+    """Variable TTC integer (ub1/ub2/ub4/ub8): first byte = length,
+    high bit = negative sign; zero -> single 0 byte."""
     if value is None:
         value = 0
     negative = value < 0
@@ -38,7 +38,7 @@ class TTCReader:
     def raw(self, n: int) -> bytes:
         if self.bytes_left() < n:
             raise TnsBufError(
-                f"buffer esaurito: richiesti {n}, disponibili {self.bytes_left()}")
+                f"buffer underrun: requested {n}, available {self.bytes_left()}")
         out = self.data[self.pos:self.pos + n]
         self.pos += n
         return out
@@ -65,7 +65,7 @@ class TTCReader:
         if length == 0:
             return 0
         if length > max_len:
-            raise TnsBufError(f"intero TTC troppo lungo: {length}")
+            raise TnsBufError(f"TTC integer too long: {length}")
         value = int.from_bytes(self.raw(length), "big")
         return -value if negative else value
 
@@ -113,7 +113,7 @@ class TTCReader:
     def skip_ub8(self):
         self.skip_ub(8)
 
-    # ---- bytes con lunghezza (ub1; 0/255 = NULL; 254 = chunked) ----
+    # ---- length-prefixed bytes (ub1; 0/255 = NULL; 254 = chunked) ----
     def length_prefixed_bytes(self) -> bytes | None:
         length = self.u8()
         if length in (0, 255):
@@ -129,11 +129,11 @@ class TTCReader:
         return self.raw(length)
 
     def read_bytes(self) -> bytes | None:
-        """equivalente client read_bytes(): ub1 length + data"""
+        """client read_bytes() equivalent: ub1 length + data"""
         return self.length_prefixed_bytes()
 
     def read_bytes_with_length(self) -> bytes | None:
-        """equivalente client read_bytes_with_length(): ub4 count, poi bytes"""
+        """client read_bytes_with_length() equivalent: ub4 count, then bytes"""
         count = self.ub4()
         return self.read_bytes() if count > 0 else None
 

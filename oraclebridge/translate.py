@@ -1,9 +1,9 @@
-"""Motore di traduzione Oracle -> PostgreSQL in tempo reale.
+"""Real-time Oracle -> PostgreSQL translation engine.
 
-Pipeline: pre-regole testuali (+) outer join, LISTAGG, ROWNUM, dual, ecc. ->
-sqlglot (read=oracle, write=postgres) -> post-regole (DATE_TRUNC, CURRENT_*)
--> sostituzione placeholder :bind -> %(bind)s per psycopg.
-Include un gestore semplificato di blocchi PL/SQL (assegnamenti e chiamate).
+Pipeline: textual pre-rules ((+) outer join, LISTAGG, ROWNUM, dual, etc.) ->
+sqlglot (read=oracle, write=postgres) -> post-rules (DATE_TRUNC, CURRENT_*)
+-> :bind placeholder replacement -> %(bind)s for psycopg.
+Includes a simplified PL/SQL block handler (assignments and calls).
 """
 import re
 
@@ -17,15 +17,15 @@ BIND_NAME_RE = re.compile(
 
 
 def find_bind_names(sql: str) -> list[str]:
-    """Nomi placeholder in ordine di apparizione (uno per occorrenza,
-    come fa il client per SQL non-PL/SQL). Ignora : dentro stringhe,
-    commenti e i cast '::'."""
+    """Placeholder names in order of appearance (one per occurrence,
+    as the client does for non-PL/SQL SQL). Ignores : inside strings,
+    comments and '::' casts."""
     names: list[str] = []
     out: list[str] = []
     i, n = 0, len(sql)
     while i < n:
         ch = sql[i]
-        if ch == "'":                       # stringa letterale
+        if ch == "'":                       # string literal
             i += 1
             while i < n:
                 if sql[i] == "'":
@@ -41,7 +41,7 @@ def find_bind_names(sql: str) -> list[str]:
         elif ch == "/" and sql[i:i + 2] == "/*":
             j = sql.find("*/", i)
             i = n if j < 0 else j + 2
-        elif ch == '"' or ch == '`':        # identificatore quotato
+        elif ch == '"' or ch == '`':        # quoted identifier
             q = ch
             i += 1
             while i < n and sql[i] != q:
@@ -80,7 +80,7 @@ def replace_bind_placeholders(sql: str) -> tuple[str, list[str]]:
 
 
 # ---------------------------------------------------------------------------
-# Pre-regole testuali su SQL Oracle (prima di sqlglot)
+# Textual pre-rules on Oracle SQL (before sqlglot)
 # ---------------------------------------------------------------------------
 def strip_from_dual(sql: str) -> str:
     return re.sub(r"(?i)\bfrom\s+dual\b", "", sql)
@@ -94,7 +94,7 @@ def rewrite_rownum(sql: str) -> str:
     """
     m = re.search(r"(?i)\bROWNUM\s*(<=|<)\s*(\d+)", sql)
     if not m:
-        # ROWNUM come espressione della lista SELECT (alias subito dopo)
+        # ROWNUM as a SELECT-list expression (alias right after)
         aliased = re.sub(
             r"(?i)\bROWNUM\b(?!\s*(?:<=|>=|<|>|=|<>|BETWEEN|IN))\s+(\w+)\b",
             r" ROW_NUMBER() OVER () AS \1", sql)
@@ -121,8 +121,8 @@ def rewrite_plus_outer_join(sql: str) -> str:
 
     Gestisce il caso classico a due/tre tabelle con un solo lato NULL:
     la tabella con (+) su tutte le sue colonne diventa la tabella
-    null-generating (LEFT JOIN). Le condizioni spostate in ON vengono
-    rimosse dal WHERE.
+    null-generating (LEFT JOIN). Conditions moved into ON are removed
+    from the WHERE clause.
     """
     if "(+)" not in sql:
         return sql
@@ -175,18 +175,18 @@ def pre_rules(sql: str) -> str:
     sql = rewrite_plus_outer_join(sql)
     sql = strip_from_dual(sql)
     sql = rewrite_rownum(sql)
-    # SYSDATE -> CURRENT_DATE (aritmetica date coerente con Oracle)
+    # SYSDATE -> CURRENT_DATE (date arithmetic consistent with Oracle)
     sql = re.sub(r"(?i)\bSYSDATE\b", "CURRENT_DATE", sql)
-    # sequenze
+    # sequences
     sql = re.sub(r"(?i)\b([\w$#]+)\.NEXTVAL\b", r"nextval('\1')", sql)
     sql = re.sub(r"(?i)\b([\w$#]+)\.CURRVAL\b", r"currval('\1')", sql)
     # DBMS_LOB.SUBSTR(col, n, start) -> substring(col, start, n)
     sql = re.sub(r"(?i)DBMS_LOB\.SUBSTR\(\s*([^,]+?)\s*,\s*([^,]+?)\s*,"
                  r"\s*([^)]+?)\s*\)", r"SUBSTRING(\1, \3, \2)", sql)
-    # RAWTOHEX(x) -> UPPER(encode(x, 'hex')), con un livello di annidamento
+    # RAWTOHEX(x) -> UPPER(encode(x, 'hex')), one nesting level
     sql = re.sub(r"(?i)RAWTOHEX\(([^()]*(?:\([^()]*\))?[^()]*)\)",
                  r"UPPER(encode(\1::bytea, 'hex'))", sql)
-    # sinonimo E -> emp (configurabile a valle)
+    # synonym E -> emp (configurable downstream)
     sql = re.sub(r"(?i)\bFROM\s+E\b(\s*[),;\s]|$)", "FROM emp\\1", sql)
     return sql
 
@@ -195,12 +195,12 @@ def post_rules(sql: str) -> str:
     sql = re.sub(r"(?i)DATE_TRUNC\(\s*'(DD|DAY)'", "DATE_TRUNC('day'", sql)
     sql = re.sub(r"(?i)DATE_TRUNC\(\s*'(MM|MONTH)'", "DATE_TRUNC('month'", sql)
     sql = re.sub(r"(?i)DATE_TRUNC\(\s*'(YYYY|YEAR)'", "DATE_TRUNC('year'", sql)
-    # bug sqlglot: stringhe generate con doppi apici in STRING_AGG
+    # sqlglot bug: strings emitted with double quotes in STRING_AGG
     sql = re.sub(r'STRING_AGG\(([^,]+),\s*"([^"]*)"', r"STRING_AGG(\1, '\2'",
                  sql)
-    # SYSDATE senza ora frazionaria
+    # SYSDATE without fractional time
     sql = re.sub(r"(?i)\bCURRENT_TIMESTAMP\b", "LOCALTIMESTAMP(0)", sql)
-    # USER Oracle -> maiuscolo come fa Oracle
+    # Oracle USER -> uppercase as Oracle does
     sql = re.sub(r"(?i)(^SELECT\s+)user\s*$", r"\1UPPER(user)", sql)
     sql = re.sub(r"(?i)(^SELECT\s+)user\s*(,)", r"\1UPPER(user)\2", sql)
     return sql
@@ -211,14 +211,14 @@ class TranslationError(Exception):
 
 
 def translate_sql(sql: str) -> str:
-    """Traduce una query/DML/DDL Oracle in SQL PostgreSQL."""
+    """Translate an Oracle query/DML/DDL into PostgreSQL SQL."""
     stripped = sql.strip().rstrip(";").strip()
     transformed = pre_rules(stripped)
     try:
         pg = sqlglot.transpile(transformed, read="oracle", write="postgres",
                                pretty=False)[0]
     except Exception as e:
-        raise TranslationError(f"traduzione non riuscita: {e}") from e
+        raise TranslationError(f"translation failed: {e}") from e
     pg = post_rules(pg)
     return pg
 
@@ -227,7 +227,7 @@ def translate_sql(sql: str) -> str:
 # PL/SQL semplificato
 # ---------------------------------------------------------------------------
 def split_statements(body: str) -> list[str]:
-    """Splitta su ';' rispettando stringhe e commenti."""
+    """Split on ';' honoring strings and comments."""
     out, buf = [], []
     i, n = 0, len(body)
     while i < n:
@@ -271,7 +271,7 @@ def split_statements(body: str) -> list[str]:
 
 
 class PlsqlBlock:
-    """Rappresentazione semplificata di un blocco PL/SQL anonimo."""
+    """Simplified representation of an anonymous PL/SQL block."""
 
     def __init__(self, source: str):
         self.source = source.strip().rstrip(";").strip()
@@ -288,11 +288,11 @@ class PlsqlBlock:
         src = self.source
         m = re.match(r"(?is)^DECLARE\b", src)
         if m:
-            self.error = "sezione DECLARE non supportata"
+            self.error = "DECLARE section not supported"
             return
         m = re.match(r"(?is)^BEGIN\b(.*)$", src, re.S)
         if not m:
-            self.error = "blocco non riconosciuto"
+            self.error = "unrecognized block"
             return
         body = m.group(1)
         em = re.search(r"(?is)\bEXCEPTION\b(.*)$", body)
@@ -300,13 +300,13 @@ class PlsqlBlock:
         if em:
             handler = em.group(1)
             if not re.search(r"(?i)WHEN\s+OTHERS", handler):
-                self.error = "solo WHEN OTHERS e' supportato"
+                self.error = "only WHEN OTHERS is supported"
                 return
             self.exception_other = True
             body = body[:em.start()]
 
         def _collect(src: str, into_statements, into_assignments) -> bool:
-            """Ritorna False se contiene costrutti non supportati."""
+            """Return False if it contains unsupported constructs."""
             for stmt in split_statements(src):
                 u = stmt.upper()
                 if u.startswith(("DECLARE", "FOR ", "IF ", "WHILE", "OPEN ",
@@ -324,10 +324,10 @@ class PlsqlBlock:
         # rimuove END finale e raccoglie il body
         body = re.sub(r"(?is)\bEND\s*$", "", body).strip()
         if not body:
-            self.error = "blocco vuoto"
+            self.error = "empty block"
             return
         if not _collect(body, self.statements, self.assignments):
-            self.error = "costrutto PL/SQL non supportato nel body"
+            self.error = "PL/SQL construct not supported in the body"
             return
         # handler WHEN OTHERS: assegnamenti con SQLCODE/SQLERRM sostituiti
         # a runtime dall'errore catturato
@@ -336,16 +336,16 @@ class PlsqlBlock:
             handler = re.sub(r"(?is)\bEND\s*$", "", handler).strip()
             if not _collect(handler, self.handler_statements,
                             self.handler_assignments):
-                self.error = "costrutto non supportato nell'handler"
+                self.error = "construct not supported in the handler"
                 return
         self.supported = True
 
     def translate(self) -> dict:
-        """Ritorna {'calls': [sql], 'select': sql, 'assignments': {...}}.
+        """Return {'calls': [sql], 'select': sql, 'assignments': {...}}.
 
-        Le espressioni sono tradotte con sqlglot; i placeholder :BIND
-        diventano %(BIND)s DOPO la traduzione (sqlglot non digerisce i
-        placeholder psycopg).
+        Expressions are translated with sqlglot; :BIND placeholders become
+        %(BIND)s AFTER the translation (sqlglot cannot digest psycopg
+        placeholders).
         """
         calls = []
         for stmt in self.statements:
@@ -355,7 +355,7 @@ class PlsqlBlock:
         exprs = []
         for bind, expr in self.assignments:
             expr = expr.strip()
-            # chiamata di funzione senza parentesi (sintassi PL/SQL)
+            # function call without parentheses (PL/SQL syntax)
             if re.fullmatch(r"[\w.$#]+", expr):
                 expr = expr + "()"
             pg_expr = translate_sql("SELECT " + expr)
@@ -367,8 +367,8 @@ class PlsqlBlock:
                 "assignment_order": [b for b, _ in self.assignments]}
 
     def translate_handler(self, error_num: int, error_msg: str) -> dict:
-        """Traduce gli assegnamenti dell'handler WHEN OTHERS sostituendo
-        SQLCODE/SQLERRM con i valori dell'errore catturato."""
+        """Translate the WHEN OTHERS handler assignments replacing
+        SQLCODE/SQLERRM with the values of the caught error."""
         exprs = []
         order = []
         for bind, expr in self.handler_assignments:

@@ -10,7 +10,7 @@ from .ttc import Session
 
 
 class _SocketReader:
-    """Adattatore con read_exact (sincrono in firma, preleva dal buffer)."""
+    """Adapter with read_exact (pulls from an internal buffer)."""
 
     def __init__(self, reader: asyncio.StreamReader):
         self.reader = reader
@@ -52,14 +52,14 @@ class ProxyServer:
     async def handle_client(self, reader: asyncio.StreamReader,
                             writer: asyncio.StreamWriter):
         peer = writer.get_extra_info("peername")
-        self._log("connessione da", peer)
+        self._log("connection from", peer)
         rdr = _SocketReader(reader)
         session = None
         try:
             # ---- handshake TNS: CONNECT (16 bit) -> ACCEPT ----
             packet = await tns.read_packet(rdr, use_32bit=False)
             if packet is None or packet.ptype != tns.PACKET_TYPE_CONNECT:
-                self._log("primo pacchetto non CONNECT:", packet)
+                self._log("first packet is not CONNECT:", packet)
                 return
             info = tns.parse_connect_payload(packet.payload)
             self._log("CONNECT:", info.get("connect_string", "")[:120])
@@ -73,17 +73,17 @@ class ProxyServer:
             while True:
                 packet = await tns.read_packet(rdr, use_32bit=True)
                 if packet is None:
-                    self._log("client disconnesso")
+                    self._log("client disconnected")
                     break
                 self._log("pkt:", repr(packet))
                 if packet.ptype == tns.PACKET_TYPE_MARKER:
                     marker = packet.payload[2] if len(packet.payload) > 2 else 0
-                    self._log("marker ricevuto:", marker)
+                    self._log("marker received:", marker)
                     writer.write(tns.build_marker_packet(tns.MARKER_RESET))
                     await writer.drain()
                     if marker == tns.MARKER_RESET:
-                        # dopo il reset il client attende l'error packet
-                        # di chiusura prima di ri-sollevare la sua eccezione
+                        # after the reset the client waits for the closing error
+                        # packet before re-raising its exception
                         err = session._error_message(
                             1013, "ORA-01013: user requested cancel of "
                                   "current operation", 0, 0, with_params=False)
@@ -94,7 +94,7 @@ class ProxyServer:
                     self._log("control packet ignorato")
                     continue
                 if packet.ptype != tns.PACKET_TYPE_DATA:
-                    self._log("pacchetto non gestito:", packet)
+                    self._log("unhandled packet:", packet)
                     continue
                 response = session.handle_ttc(packet.payload)
                 if response is None:
@@ -108,9 +108,9 @@ class ProxyServer:
                 if session.pg is not None and session.pg.conn is None:
                     break
         except (ConnectionResetError, BrokenPipeError):
-            self._log("connessione interrotta")
+            self._log("connection interrupted")
         except Exception as e:  # noqa: BLE001
-            self._log("errore sessione:", type(e).__name__, e)
+            self._log("session error:", type(e).__name__, e)
         finally:
             if session is not None and session.pg is not None:
                 session.pg.close()

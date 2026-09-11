@@ -1,6 +1,6 @@
 FROM postgres:17
 
-# orafce: funzioni/pacchetti Oracle-compatibili (NVL, DECODE, dbms_output, ...)
+# orafce: Oracle-compatible functions/packages (NVL, DECODE, dbms_output, ...)
 RUN apt-get update \
     && apt-get install -y --no-install-recommends postgresql-17-orafce \
     && rm -rf /var/lib/apt/lists/*

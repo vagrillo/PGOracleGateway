@@ -1,15 +1,15 @@
-# Smoke test OracleBridge — mode: postgres
-Generato: 2026-09-11T15:19:10
+# OracleBridge smoke test — mode: postgres
+Generated: 2026-09-12T01:14:21
 Database: PostgreSQL 17.11 (Debian 17.11-1.pgdg13+2) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
 
-## Traduzioni applicate (sqlglot / override)
+## Applied translations (sqlglot / override)
 
 - `san.001` (sqlglot): `SELECT 1 FROM dual`
 - `san.002` (sqlglot): `SELECT 'Hello Bridge' FROM dual`
 - `san.003` (sqlglot): `SELECT 1 + 1, 'x' FROM dual`
 - `san.004` (override): `SELECT UPPER(user)`
 - `san.005` (sqlglot): `SELECT NULL FROM dual`
-- `san.006` (override): `SELECT CASE WHEN date_trunc('day', now())::date = CURRENT_DATE THEN 'ok' ELSE 'ko' END`
+- `san.006` (override): `SELECT CASE WHEN to_number(to_char(CURRENT_DATE, 'J'), '9999999') > 2450000 THEN 'ok' ELSE 'ko' END`
 - `san.007` (override): `SELECT LENGTH(sys_guid()) * 2`
 - `san.008` (sqlglot): `SELECT 1 + NULL FROM dual`
 - `san.009` (sqlglot): `SELECT CAST(42 AS VARCHAR(10)), CAST('17' AS DECIMAL) + 1 FROM dual`
@@ -74,7 +74,7 @@ Database: PostgreSQL 17.11 (Debian 17.11-1.pgdg13+2) on x86_64-pc-linux-gnu, com
 - `err.006` (sqlglot): `SELECT CAST(1 AS DOUBLE PRECISION) / 0 FROM dual`
 - `err.007` (sqlglot): `FLIPPAROLA AS TOTALE`
 
-## Riepilogo: PASS=63, SKIP=12
+## Summary: PASS=63, SKIP=12
 - **PASS**: 63
 - **SKIP**: 12 -> typ.008, seq.001, ora.008, pls.010, pls.011, pls.012, pls.013, pls.002, pls.005, pls.006, pls.007, pls.008
 
@@ -115,9 +115,9 @@ Database: PostgreSQL 17.11 (Debian 17.11-1.pgdg13+2) on x86_64-pc-linux-gnu, com
 | typ.005 | PASS |  vs oracle: MATCH |
 | typ.006 | PASS |  vs oracle: MATCH |
 | typ.007 | PASS |  vs oracle: MATCH |
-| typ.008 | SKIP | Oracle: '' e' NULL; PostgreSQL distingue '' da NULL |
+| typ.008 | SKIP | Oracle: '' is NULL; PostgreSQL distinguishes '' from NULL |
 | typ.009 | PASS |  vs oracle: MATCH |
-| seq.001 | SKIP | pseudo-colonna .NEXTVAL da riscrivere; PG nextval() avanza a ogni chiamata |
+| seq.001 | SKIP | .NEXTVAL pseudo-column must be rewritten; PG nextval() advances on every call |
 | seq.002 | PASS |  vs oracle: MATCH |
 | ora.001 | PASS |  vs oracle: MATCH |
 | ora.002 | PASS |  vs oracle: MATCH |
@@ -126,27 +126,27 @@ Database: PostgreSQL 17.11 (Debian 17.11-1.pgdg13+2) on x86_64-pc-linux-gnu, com
 | ora.005 | PASS |  vs oracle: MATCH |
 | ora.006 | PASS |  vs oracle: MATCH |
 | ora.007 | PASS |  vs oracle: MATCH |
-| ora.008 | SKIP | PostgreSQL non ha sinonimi |
+| ora.008 | SKIP | PostgreSQL has no synonyms |
 | ora.009 | PASS |  vs oracle: MATCH |
 | ora.010 | PASS |  vs oracle: MATCH |
 | dml.001 | PASS |  vs oracle: MATCH |
 | dml.002 | PASS |  vs oracle: MATCH |
 | dml.003 | PASS |  vs oracle: MATCH |
 | dml.004 | PASS |  vs oracle: MATCH |
-| dml.005 | PASS |  \| divergente da Oracle vs oracle: DIVERGENT |
+| dml.005 | PASS |  \| divergent from Oracle vs oracle: DIVERGENT |
 | dml.006 | PASS |  vs oracle: MATCH |
 | dml.007 | PASS |  vs oracle: MATCH |
 | pls.010 | SKIP | blocco anonimo PL/SQL -> DO block PL/pgSQL |
-| pls.011 | SKIP | exception handler nel blocco |
-| pls.012 | SKIP | attributi %TYPE / cursori espliciti |
+| pls.011 | SKIP | exception handler in the block |
+| pls.012 | SKIP | %TYPE attributes / explicit cursors |
 | pls.013 | SKIP | BULK COLLECT oracle-only |
-| pls.002 | SKIP | stato di package non esiste in PostgreSQL |
+| pls.002 | SKIP | package state does not exist in PostgreSQL |
 | pls.003 | PASS |  vs oracle: MATCH |
 | pls.004 | PASS |  vs oracle: MATCH |
-| pls.005 | SKIP | REF CURSOR -> funzione setof/cursore server-side |
-| pls.006 | SKIP | blocco con exception |
+| pls.005 | SKIP | REF CURSOR -> setof function / server-side cursor |
+| pls.006 | SKIP | block with exception |
 | pls.007 | SKIP | oracle-only |
-| pls.008 | SKIP | instradamento dbms_output |
+| pls.008 | SKIP | dbms_output routing |
 | pls.009 | PASS |  vs oracle: MATCH |
 | err.001 | PASS |  vs oracle: MATCH |
 | err.002 | PASS |  vs oracle: MATCH |

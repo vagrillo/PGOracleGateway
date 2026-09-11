@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""Smoke test OracleBridge - runner.
+"""OracleBridge smoke test - runner.
 
-Modalita':
-  oracle    connessione nativa a Oracle 26ai Free; produce la baseline
-            (results/baseline_oracle.json) e report (results/report_oracle.md)
-  postgres  diagnostica: traduce le query (sqlglot o override pg_sql) e le
-            esegue su PostgreSQL+orafce; confronta con la baseline se presente
-  proxy     usa il proxy OracleBridge come se fosse Oracle; confronta ogni
-            risultato con la baseline: il proxy e' pronto quando tutto MATCHA
+Modes:
+  oracle    native connection to Oracle 26ai Free; produces the baseline
+            (results/baseline_oracle.json) and report (results/report_oracle.md)
+  postgres  diagnostics: translates the queries (sqlglot or pg_sql override)
+            and runs them on PostgreSQL+orafce; compares with the baseline
+  proxy     uses the OracleBridge proxy as if it were Oracle; compares each
+            result with the baseline: the proxy is ready when all MATCH
 
-Uso:
+Usage:
   python3 smoke_test.py --mode oracle
   python3 smoke_test.py --mode postgres
   python3 smoke_test.py --mode proxy
-  python3 smoke_test.py --mode oracle --filter ora.   # solo categoria/id
+  python3 smoke_test.py --mode oracle --filter ora.   # category/id only
 """
 import argparse
 import json
@@ -34,7 +34,7 @@ BASELINE = Path(RESULTS_DIR) / "baseline_oracle.json"
 
 
 # ---------------------------------------------------------------------------
-# Normalizzazione valori per confronti stabili JSON
+# Value normalization for stable JSON comparisons
 # ---------------------------------------------------------------------------
 def norm_value(v):
     if v is None or isinstance(v, (bool, int, str)):
@@ -149,8 +149,8 @@ class OraRunner:
             cur.close()
 
     def run_dbms_output_test(self):
-        # sostituito dal blocco PL/SQL pls.008 in testcases.PLSQL_SRC
-        return {"status": "SKIP", "detail": "sostituito da blocco pls.008"}
+        # replaced by the pls.008 PL/SQL block in testcases.PLSQL_SRC
+        return {"status": "SKIP", "detail": "replaced by pls.008 block"}
 
     def run_tests(self, tests):
         results = {}
@@ -175,16 +175,16 @@ class OraRunner:
         if step.expect_error:
             got = res.get("error")
             if got != step.expect_error:
-                return False, f"atteso errore {step.expect_error}, ottenuto {got}"
+                return False, f"expected error {step.expect_error}, got {got}"
             return True, ""
         if res.get("error"):
-            return False, f"errore inatteso {res['error']}: {res.get('message','')}"
+            return False, f"unexpected error {res['error']}: {res.get('message','')}"
         if step.expect_rows is not None:
             want = norm_rows(step.expect_rows)
             if res.get("rows") != want:
-                return False, f"righe attese {want}, ottenute {res.get('rows')}"
+                return False, f"expected rows {want}, got {res.get('rows')}"
         if step.expect_rowcount is not None and res.get("rowcount") != step.expect_rowcount:
-            return False, f"rowcount atteso {step.expect_rowcount}, ottenuto {res.get('rowcount')}"
+            return False, f"expected rowcount {step.expect_rowcount}, got {res.get('rowcount')}"
         if step.expect_out:
             for k, exp in step.expect_out.items():
                 got = (res.get("out") or {}).get(k)
@@ -193,12 +193,12 @@ class OraRunner:
                 elif not isinstance(exp, str):
                     exp = norm_value(exp)
                 if got != exp:
-                    return False, f"bind OUT {k}: atteso {exp}, ottenuto {got}"
+                    return False, f"OUT bind {k}: expected {exp}, got {got}"
         return True, ""
 
 
 # ---------------------------------------------------------------------------
-# PostgreSQL: traduzione + esecuzione diagnostica
+# PostgreSQL: translation + diagnostic execution
 # ---------------------------------------------------------------------------
 PLACEHOLDER_RE = re.compile(r"(?<!:):([A-Za-z_]\w*)")
 
@@ -273,7 +273,7 @@ class PgRunner:
                 sql_pg, origin = to_pg_sql(step, tc)
                 translations[tc.id].append({"origin": origin, "sql": sql_pg})
                 if sql_pg is None:
-                    ok, detail = False, f"step {i}: non traducibile ({origin})"
+                    ok, detail = False, f"step {i}: not translatable ({origin})"
                     steps_res.append({"error": "UNTRANSLATED"})
                     break
                 if origin == "raw":
@@ -304,29 +304,29 @@ class PgRunner:
                     results[tc.id]["vs_oracle"] = "MATCH"
                 else:
                     results[tc.id]["vs_oracle"] = "DIVERGENT"
-                    results[tc.id]["detail"] += " | divergente da Oracle"
+                    results[tc.id]["detail"] += " | divergent from Oracle"
         return results, translations
 
     def verify_step_pg(self, step, res):
         if step.expect_error:
             want = PG_SQLSTATE.get(step.expect_error, step.expect_error)
             if res.get("error") != want:
-                return False, f"atteso {want}, ottenuto {res.get('error')}"
+                return False, f"expected {want}, got {res.get('error')}"
             return True, ""
         if res.get("error"):
-            return False, f"errore inatteso {res['error']}: {res.get('message','')}"
+            return False, f"unexpected error {res['error']}: {res.get('message','')}"
         if step.expect_rows is not None:
             want = norm_rows(step.expect_rows)
             if res.get("rows") != want:
-                return False, f"righe attese {want}, ottenute {res.get('rows')}"
+                return False, f"expected rows {want}, got {res.get('rows')}"
         if step.expect_rowcount is not None and res.get("rowcount") != step.expect_rowcount:
-            return False, f"rowcount atteso {step.expect_rowcount}, ottenuto {res.get('rowcount')}"
+            return False, f"expected rowcount {step.expect_rowcount}, got {res.get('rowcount')}"
         return True, ""
 
     def matches_baseline(self, base, res):
-        """Confronto tollerante: gli step DML/transazionali privi di righe
-        sono gia' verificati dalle attese proprie; il RETURNING INTO oracle
-        (bind OUT) e' semanticamente il RETURNING resultset di PG."""
+        """Tolerant comparison: DML/transactional steps without rows are
+        already verified by their own expectations; the Oracle RETURNING INTO
+        (OUT bind) is semantically the PG RETURNING resultset."""
         for bs, rs in zip(base.get("steps", []), res.get("steps", [])):
             if "raw_tx" in rs:
                 continue
@@ -353,11 +353,11 @@ class PgRunner:
 # Report
 # ---------------------------------------------------------------------------
 def write_report(path, mode, results, translations=None, banner=""):
-    lines = [f"# Smoke test OracleBridge — mode: {mode}",
-             f"Generato: {datetime.now().isoformat(timespec='seconds')}",
+    lines = [f"# OracleBridge smoke test — mode: {mode}",
+             f"Generated: {datetime.now().isoformat(timespec='seconds')}",
              f"Database: {banner}", ""]
     if translations is not None:
-        lines += ["## Traduzioni applicate (sqlglot / override)", ""]
+        lines += ["## Applied translations (sqlglot / override)", ""]
         for tc_id, trs in translations.items():
             for t in trs:
                 if t.get("sql") and t.get("origin") in ("sqlglot", "override"):
@@ -366,7 +366,7 @@ def write_report(path, mode, results, translations=None, banner=""):
     by_status = {}
     for tc_id, r in results.items():
         by_status.setdefault(r["status"], []).append(tc_id)
-    lines.append(f"## Riepilogo: " + ", ".join(
+    lines.append(f"## Summary: " + ", ".join(
         f"{k}={len(v)}" for k, v in sorted(by_status.items())) + "")
     for k in by_status:
         if k == "PASS":
@@ -386,14 +386,14 @@ def write_report(path, mode, results, translations=None, banner=""):
 def summary_print(results):
     ok = sum(1 for r in results.values() if r["status"] == "PASS")
     tot = len(results)
-    print(f"\n===== RISULTATO: {ok}/{tot} PASS =====")
+    print(f"\n===== RESULT: {ok}/{tot} PASS =====")
     for tc_id, r in results.items():
         if r["status"] != "PASS":
             print(f"  {r['status']:>6} {tc_id}: {r.get('detail','')}")
     bad = [tc_id for tc_id, r in results.items()
            if r.get("vs_oracle") == "DIVERGENT"]
     if bad:
-        print(f"  divergenti da Oracle: {', '.join(bad)}")
+        print(f"  divergent from Oracle: {', '.join(bad)}")
 
 
 # ---------------------------------------------------------------------------
@@ -402,7 +402,7 @@ def main():
     ap.add_argument("--mode", choices=["oracle", "postgres", "proxy"],
                     default="oracle")
     ap.add_argument("--filter", default=None,
-                    help="esegue solo i test il cui id contiene questa stringa")
+                    help="run only the tests whose id contains this string")
     args = ap.parse_args()
 
     tests = [t for t in TESTS if not args.filter or args.filter in t.id]
@@ -411,7 +411,7 @@ def main():
 
     if args.mode in ("oracle", "proxy"):
         cfg = ORACLE if args.mode == "oracle" else PROXY
-        print(f"Connessione a {cfg.dsn} (utente {cfg.user}) ...")
+        print(f"Connecting to {cfg.dsn} (user {cfg.user}) ...")
         conn = oracledb.connect(user=cfg.user, password=cfg.password,
                                 dsn=cfg.dsn)
         banner = ""

@@ -1,3 +1,3 @@
-"""OracleBridge: proxy che si presenta come Oracle Database e traduce
-in tempo reale verso PostgreSQL."""
+"""OracleBridge: a proxy that presents itself as Oracle Database and
+translates in real time to PostgreSQL."""
 __version__ = "0.1.0"

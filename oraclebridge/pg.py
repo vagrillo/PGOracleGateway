@@ -1,8 +1,8 @@
-"""Backend PostgreSQL di una sessione proxy.
+"""PostgreSQL backend of a proxy session.
 
-Mantiene la connessione PG per sessione (semantica transazionale Oracle:
-la transazione resta aperta finche' non arriva COMMIT/ROLLBACK), i cursori
-con buffer di righe per i REF CURSOR e per i risultati oltre l'SDU.
+Keeps one PG connection per session (Oracle transaction semantics: the
+transaction stays open until COMMIT/ROLLBACK arrives), plus cursors with
+row buffers for REF CURSORs and results beyond the SDU.
 """
 import psycopg
 from psycopg import sql as pgsql
@@ -49,8 +49,8 @@ def column_metadata(name: str, pg_type_oid: int, precision=None,
                     scale=None, nullable=True) -> dict:
     ora_name, ora_type = PG_OID_MAP.get(pg_type_oid, ("VARCHAR2",
                                                       ORA_TYPE_VARCHAR))
-    # i tipi carattere richiedono CS_FORM_IMPLICIT (1) nella metadata:
-    # con csfrm=0 il client non riconosce il tipo (DPY-3006)
+    # character types require CS_FORM_IMPLICIT (1) in the metadata:
+    # with csfrm=0 the client does not recognize the type (DPY-3006)
     csfrm = 1 if ora_type in (ORA_TYPE_VARCHAR, ORA_TYPE_CHAR,
                               ORA_TYPE_LONG, ORA_TYPE_CLOB) else 0
     return {
@@ -99,9 +99,9 @@ class PgSession:
 
     # ------------------------------------------------------------------
     def run(self, sql_pg: str, params: dict | None = None):
-        """Esegue uno statement. Ritorna (metadata, righe).
+        """Execute one statement. Returns (metadata, rows).
 
-        Le righe sono sempre materializzate integralmente (dataset di test).
+        Rows are always fully materialized (test dataset).
         """
         if self.conn is None:
             raise OrabridgeError(1017, "ORA-01017: not connected")

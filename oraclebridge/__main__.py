@@ -1,11 +1,11 @@
-"""Avvio del proxy: python -m oraclebridge
+"""Proxy startup: python -m oraclebridge
 
-Configurazione via variabili d'ambiente (prefisso OB_):
+Configuration via environment variables (OB_ prefix):
   OB_LISTEN_HOST (default 0.0.0.0)   OB_LISTEN_PORT (default 1527)
   OB_PG_HOST (default localhost)     OB_PG_PORT (default 5433)
   OB_PG_DB (default orabridge)
-  OB_KNOWN_PASSWORD (opzionale: password Oracle attesa dal proxy; se vuota
-  viene usata quella passata dal client direttamente verso PostgreSQL)
+  OB_KNOWN_PASSWORD (optional: Oracle password expected by the proxy; if
+  empty the one sent by the client is used directly towards PostgreSQL)
 """
 import asyncio
 import os
@@ -25,9 +25,9 @@ def main():
         pg_host=_get("PG_HOST", "localhost"),
         pg_port=int(_get("PG_PORT", "5433")),
         pg_db=_get("PG_DB", "orabridge"),
-        # l'O5LOGON 11g richiede la password attesa in configurazione: le
-        # credenziali del client vengono comunque verificate e riusate per
-        # aprire la sessione PostgreSQL (utente minuscolo)
+        # 11g O5LOGON requires the expected password in configuration: the
+        # client credentials are still verified and reused to open the
+        # PostgreSQL session (lowercased user)
         known_password=os.environ.get("OB_KNOWN_PASSWORD", "TestApp_26ai"),
         verbose=os.environ.get("OB_VERBOSE", "") not in ("", "0"),
     )

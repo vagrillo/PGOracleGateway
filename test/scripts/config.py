@@ -1,6 +1,6 @@
-"""Configurazione centralizzata degli ambienti di test OracleBridge.
+"""Centralized configuration of the OracleBridge test environments.
 
-Tutti i valori sono sovrascrivibili via variabili d'ambiente (prefisso OB_).
+All values are overridable via environment variables (OB_ prefix).
 """
 import os
 from dataclasses import dataclass
@@ -35,7 +35,7 @@ class PostgresCfg:
 
 @dataclass(frozen=True)
 class ProxyCfg:
-    """Endpoint del proxy OracleBridge (da implementare): finge di essere Oracle."""
+    """OracleBridge proxy endpoint (to be implemented): pretends to be Oracle."""
     host: str = _get("PROXY_HOST", "localhost")
     port: int = int(_get("PROXY_PORT", "1527"))
     service: str = _get("PROXY_SERVICE", "FREEPDB1")

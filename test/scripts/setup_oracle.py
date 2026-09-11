@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Setup schema di test su Oracle 26ai Free.
+"""Test schema setup on Oracle 26ai Free.
 
-- Attende che il database sia raggiungibile (container in avvio)
-- Crea/allinea l'utente TESTAPP (idempotente)
-- Crea lo schema dimostrativo con le feature Oracle che il proxy
-  OracleBridge dovra' tradurre: tipi, sequenze, viste, sinonimi,
-  package, trigger, REF CURSOR, dati seed.
+- Waits for the database to be reachable (container starting up)
+- Creates/aligns the TESTAPP user (idempotent)
+- Creates the demo schema with the Oracle features the OracleBridge
+  proxy must translate: types, sequences, views, synonyms,
+  packages, triggers, REF CURSOR, seed data.
 
-Uso: python3 setup_oracle.py
+Usage: python3 setup_oracle.py
 """
 import sys
 import time
@@ -27,7 +27,7 @@ DROP_OBJECTS = ["TRG_EMP_AUD", "PKG_DEMO", "F_SAL_LEVEL", "V_HIGH_SAL", "E",
 
 
 def wait_for_db():
-    print(f"Attendo Oracle su {ORACLE.dsn} ...")
+    print(f"Waiting for Oracle on {ORACLE.dsn} ...")
     last_err = None
     for i in range(WAIT_RETRIES):
         try:
@@ -35,15 +35,15 @@ def wait_for_db():
                                   dsn=ORACLE.dsn) as conn:
                 v = conn.cursor().execute(
                     "select banner from v$version where rownum = 1").fetchone()
-                print(f"DB pronto: {v[0]}")
+                print(f"DB ready: {v[0]}")
                 return
         except Exception as e:  # noqa: BLE001
             last_err = e
             if (i + 1) % 6 == 0:
-                print(f"  ... ancora in attesa ({(i+1)*WAIT_SECONDS}s): "
+                print(f"  ... still waiting ({(i+1)*WAIT_SECONDS}s): "
                       f"{type(e).__name__}")
             time.sleep(WAIT_SECONDS)
-    raise SystemExit(f"Database non raggiungibile: {last_err}")
+    raise SystemExit(f"Database not reachable: {last_err}")
 
 
 def ensure_user():
@@ -53,7 +53,7 @@ def ensure_user():
             "select count(*) from dba_users where username = 'TESTAPP'"
         ).fetchone()[0]
         if not exists:
-            print("Creo utente TESTAPP ...")
+            print("Creating TESTAPP user ...")
             ex(conn, 'create user testapp identified by "TestApp_26ai"')
         else:
             ex(conn, 'alter user testapp identified by "TestApp_26ai"')
@@ -63,15 +63,15 @@ def ensure_user():
             try:
                 ex(conn, g)
             except oracledb.DatabaseError as e:
-                if "ORA-01919" not in str(e):  # ruolo inesistente
+                if "ORA-01919" not in str(e):  # non-existent role
                     raise
         conn.commit()
-        print("Utente TESTAPP pronto.")
+        print("TESTAPP user ready.")
 
 
 # ---------------------------------------------------------------------------
-# Schema di test: lista esplicita di statement (niente parsing: robusto con
-# blocchi PL/SQL contenenti CASE...END, loop, ecc.)
+# Test schema: explicit statement list (no parsing: robust with
+# PL/SQL blocks containing CASE...END, loops, etc.)
 # ---------------------------------------------------------------------------
 STMTS = [
     ("tab.dept", """CREATE TABLE dept (
@@ -277,7 +277,7 @@ def drop_existing(conn):
             sql = f'DROP {otype} {name}'
         ex(conn, sql)
     if rows:
-        print(f"Rimosso schema precedente ({len(dropped)} oggetti).")
+        print(f"Removed previous schema ({len(dropped)} oggetti).")
 
 
 def main():
@@ -285,7 +285,7 @@ def main():
     ensure_user()
     with oracledb.connect(user=ORACLE.user, password=ORACLE.password,
                           dsn=ORACLE.dsn) as conn:
-        print("Creo schema di test ...")
+        print("Creating test schema ...")
         drop_existing(conn)
         conn.commit()
         errors = 0
@@ -294,14 +294,14 @@ def main():
                 ex(conn, sql)
             except oracledb.DatabaseError as e:
                 errors += 1
-                print(f"  ERRORE [{label}]: {str(e).splitlines()[0]}")
+                print(f"  ERROR [{label}]: {str(e).splitlines()[0]}")
         conn.commit()
         n_emp = conn.cursor().execute("select count(*) from emp").fetchone()[0]
         objs = conn.cursor().execute(
             "select object_type, count(*) from user_objects "
             "group by object_type order by 1").fetchall()
-        print("Oggetti:", ", ".join(f"{t}={n}" for t, n in objs))
-        print(f"emp: {n_emp} righe | errori: {errors}")
+        print("Objects:", ", ".join(f"{t}={n}" for t, n in objs))
+        print(f"emp: {n_emp} rows | errors: {errors}")
         if errors:
             raise SystemExit(1)
 

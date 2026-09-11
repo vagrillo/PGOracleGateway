@@ -92,7 +92,7 @@
   "steps": [
    {
     "columns": [
-     "CASEWHENTRUNC(SYSDATE)=TRUNC(CURRENT_DATE)THEN'OK'ELSE'KO'END"
+     "CASEWHENTO_NUMBER(TO_CHAR(SYSDATE,'J'))>2450000THEN'OK'ELSE'KO'END"
     ],
     "rows": [
      [
@@ -1008,7 +1008,7 @@
    {
     "out": {
      "newid": [
-      4
+      6
      ]
     },
     "rows": null,

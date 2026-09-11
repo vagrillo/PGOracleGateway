@@ -1,8 +1,8 @@
-# Smoke test OracleBridge — mode: oracle
-Generato: 2026-09-11T15:19:07
+# OracleBridge smoke test — mode: oracle
+Generated: 2026-09-12T01:14:20
 Database: Oracle AI Database 26ai Free Release 23.26.3.0.0 - Develop, Learn, and Run for Free
 
-## Riepilogo: PASS=75
+## Summary: PASS=75
 - **PASS**: 75
 
 | Test | Stato | Dettaglio |

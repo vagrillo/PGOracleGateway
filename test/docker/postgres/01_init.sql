@@ -1,4 +1,4 @@
--- Init PostgreSQL mirror: estensione Oracle-compat + utente di test
+-- PostgreSQL mirror init: Oracle-compat extension + test user
 CREATE EXTENSION IF NOT EXISTS orafce;
 
 DO $$
