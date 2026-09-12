@@ -1,4 +1,4 @@
-# PGO Comet  - OracleBridge
+# PGO Comet  - the PostgreSQL to Oracle Bridge !
 
 A proxy that presents itself to applications as **Oracle Database**
 (the proprietary SQL*Net/TNS protocol + TTC) and translates in real time to
