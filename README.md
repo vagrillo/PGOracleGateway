@@ -1,4 +1,4 @@
-# OracleBridge
+# PGO Comet  - OracleBridge
 
 A proxy that presents itself to applications as **Oracle Database**
 (the proprietary SQL*Net/TNS protocol + TTC) and translates in real time to
@@ -82,3 +82,9 @@ side of the protocol: it was used as the executable specification to write
 the server side (no public Oracle documentation exists). `sqlglot` covers the
 SQL translation, `psycopg` the backend. For production throughput the
 TNS/TTC layer can be ported to Go or Rust keeping the tests as the contract.
+
+
+
+
+
+<img width="756" height="720" alt="image" src="https://github.com/user-attachments/assets/f835ca4e-6ec3-4cd2-8849-b72db942be82" />
